@@ -133,41 +133,21 @@ It's recommended to use [Docker](https://www.docker.com/) to build ffmpeg.js.
 
 1.  Clone ffmpeg.js repository with submodules:
     ```bash
-    git clone https://github.com/Kagami/ffmpeg.js.git --recurse-submodules
+    git clone https://github.com/pcprince/ffmpeg.js.git --recurse-submodules
     ```
 
 2.  Modify Makefile and/or patches if you wish to make a custom build.
 
-3.  Build everything:
+3.  Open in Powershell:
     ```bash
-    docker run --rm -it -v /path/to/ffmpeg.js:/mnt -w /opt kagamihi/ffmpeg.js
+    docker run --rm -it -v ${PWD}:/mnt -w /opt kagamihi/ffmpeg.js
+    ```
+4.  Build:
+    ```bash
     # cp -a /mnt/{.git,build,Makefile} . && source /root/emsdk/emsdk_env.sh && make && cp ffmpeg*.js /mnt
     ```
 
 That's it. ffmpeg.js modules should appear in your repository clone.
-
-## Build without Docker
-
-Ubuntu example:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y git python build-essential automake libtool pkg-config
-
-cd ~
-git clone https://github.com/emscripten-core/emsdk.git && cd emsdk
-./emsdk install latest
-./emsdk activate latest
-source emsdk_env.sh
-
-cd ~
-git clone https://github.com/Kagami/ffmpeg.js.git --recurse-submodules && cd ffmpeg.js
-make
-```
-
-## Credits
-
-Thanks to [videoconverter.js](https://bgrins.github.io/videoconverter.js/) for inspiration. And of course to all great projects which made this library possible: FFmpeg, Emscripten, asm.js, node.js and many others.
 
 ## License
 
