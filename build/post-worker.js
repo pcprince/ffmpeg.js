@@ -44,7 +44,7 @@ self.onmessage = function(e) {
       __ffmpegjs_running = false;
     }
   } else {
-    setTimeout(() => {
+    setTimeout(function () {
      self.postMessage({"type": "error", "data": "unknown command"});
     }, 10);
   }
