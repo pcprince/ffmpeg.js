@@ -142,9 +142,24 @@ It's recommended to use [Docker](https://www.docker.com/) to build ffmpeg.js.
     ```bash
     docker run --rm -it -v ${PWD}:/mnt -w /opt kagamihi/ffmpeg.js
     ```
-4.  Build:
+4.  Prepare files and install yasm:
     ```bash
-    cp -a /mnt/{.git,build,Makefile} . && source /root/emsdk/emsdk_env.sh && make mp4 && cp ffmpeg*.js /mnt
+    cp -a /mnt/{.git,build,Makefile} . && source /root/emsdk/emsdk_env.sh && apt-get install yasm
+    ```
+
+5. Copy custom filter to correct location:
+    ```bash
+    cp -ar /mnt/customfilter/. build/ffmpeg-mp4/libavfilter/
+    ```
+
+7. Run configure script to add custom filter
+    ```bash
+    ./build/ffmpeg-mp4/configure
+    ```
+
+8. Build
+    ```bash
+    make mp4 && cp ffmpeg*.js /mnt
     ```
 
 That's it. ffmpeg.js modules should appear in your repository clone.
@@ -168,17 +183,12 @@ Based on the steps given in the [ffmpeg docs](https://github.com/FFmpeg/FFmpeg/b
     docker run --rm -it -v ${PWD}:/mnt -w /opt kagamihi/ffmpeg.js
     ```
 
-5. Copy over files
+5. Copy over files and install yasm
     ```bash
-    cp -a /mnt/{.git,build,Makefile} . && source /root/emsdk/emsdk_env.sh
+    cp -a /mnt/{.git,build,Makefile} . && source /root/emsdk/emsdk_env.sh && apt-get install yasm
     ```
 
-6.  Install yasm:
-    ```
-    apt-get install yasm
-    ```
-
-7. Run 
+7. Run configure script to add custom filter
     ```bash
     ./build/ffmpeg-mp4/configure
     ```
