@@ -40,7 +40,7 @@
 
 #define MAX(a, b)               ((a) > (b) ? (a) : (b))
 
-#define ROUNDED_DIV(a, b)       (((a) + (b/2)) / (b))
+#define ROUNDED_DIV(a, b)       (((a) + ((b)/2)) / (b))
 
 static const char *const var_names[] = {
     "dar",
