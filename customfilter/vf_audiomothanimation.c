@@ -36,6 +36,12 @@
 #include "internal.h"
 #include "video.h"
 
+#define MIN(a, b)               ((a) < (b) ? (a) : (b))
+
+#define MAX(a, b)               ((a) > (b) ? (a) : (b))
+
+#define ROUNDED_DIV(a, b)       (((a) + (b/2)) / (b))
+
 static const char *const var_names[] = {
     "dar",
     "hsub", "vsub",
@@ -85,6 +91,10 @@ typedef struct AudioMothAnimationContext {
 
 static const int NUM_EXPR_EVALS = 5;
 
+static int numberOfBoxes = 0;
+
+static int frameCounter = 0;
+
 static av_cold int init(AVFilterContext *ctx)
 {
     AudioMothAnimationContext *s = ctx->priv;
@@ -101,6 +111,8 @@ static av_cold int init(AVFilterContext *ctx)
         s->yuv_color[V] = RGB_TO_V_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
         s->yuv_color[A] = rgba_color[3];
     }
+
+    numberOfBoxes += 1;
 
     return 0;
 }
@@ -214,6 +226,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int plane, x, y, xb = s->x, yb = s->y;
     unsigned char *row[4];
 
+    int counter = frameCounter / numberOfBoxes;
+
+    int xPosition = xb + ROUNDED_DIV(counter * (s->w - 1), s->framecount);
+
+    xPosition = MAX(xPosition, xb);
+
+    xPosition = MIN(xPosition, xb + s->w - 1);
+
     if (s->have_alpha && s->replace) {
         for (y = FFMAX(yb, 0); y < frame->height && y < (yb + s->h); y++) {
             row[0] = frame->data[0] + y * frame->linesize[0];
@@ -225,17 +245,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
             if (s->invert_color) {
                 for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++)
-                    if ((y - yb < s->framecount) || (yb + s->h - 1 - y < s->framecount) ||
-                        (x - xb < s->framecount) || (xb + s->w - 1 - x < s->framecount))
+                    if (x == xPosition) {
                         row[0][x] = 0xff - row[0][x];
+                    }
             } else {
                 for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++) {
-                    if ((y - yb < s->framecount) || (yb + s->h - 1 - y < s->framecount) ||
-                        (x - xb < s->framecount) || (xb + s->w - 1 - x < s->framecount)) {
-                        row[0][x           ] = s->yuv_color[Y];
+                    if (x == xPosition) {
+                        row[0][x] = s->yuv_color[Y];
                         row[1][x >> s->hsub] = s->yuv_color[U];
                         row[2][x >> s->hsub] = s->yuv_color[V];
-                        row[3][x           ] = s->yuv_color[A];
+                        row[3][x] = s->yuv_color[A];
                     }
                 }
             }
@@ -250,16 +269,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
             if (s->invert_color) {
                 for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++)
-                    if ((y - yb < s->framecount) || (yb + s->h - 1 - y < s->framecount) ||
-                        (x - xb < s->framecount) || (xb + s->w - 1 - x < s->framecount))
+                    if (x == xPosition) {
                         row[0][x] = 0xff - row[0][x];
+                    }
             } else {
                 for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++) {
                     double alpha = (double)s->yuv_color[A] / 255;
-
-                    if ((y - yb < s->framecount) || (yb + s->h - 1 - y < s->framecount) ||
-                        (x - xb < s->framecount) || (xb + s->w - 1 - x < s->framecount)) {
-                        row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * s->yuv_color[Y];
+                    if (x == xPosition) {
+                        row[0][x] = (1 - alpha) * row[0][x] + alpha * s->yuv_color[Y];
                         row[1][x >> s->hsub] = (1 - alpha) * row[1][x >> s->hsub] + alpha * s->yuv_color[U];
                         row[2][x >> s->hsub] = (1 - alpha) * row[2][x >> s->hsub] + alpha * s->yuv_color[V];
                     }
@@ -267,6 +284,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             }
         }
     }
+
+    frameCounter += 1;
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
