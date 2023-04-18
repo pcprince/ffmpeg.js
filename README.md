@@ -147,17 +147,12 @@ It's recommended to use [Docker](https://www.docker.com/) to build ffmpeg.js.
     cp -a /mnt/{.git,build,Makefile} . && source /root/emsdk/emsdk_env.sh && apt-get install yasm
     ```
 
-5. Copy custom filter to correct location:
+5. Copy custom filter to correct location then run configure script to add custom filter:
     ```bash
-    cp -ar /mnt/customfilter/. build/ffmpeg-mp4/libavfilter/
+    cp -ar /mnt/customfilter/. build/ffmpeg-mp4/libavfilter/ && ./build/ffmpeg-mp4/configure
     ```
 
-7. Run configure script to add custom filter
-    ```bash
-    ./build/ffmpeg-mp4/configure
-    ```
-
-8. Build
+6. Build
     ```bash
     make mp4 && cp ffmpeg*.js /mnt
     ```
