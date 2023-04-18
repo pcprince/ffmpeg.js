@@ -228,7 +228,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     int counter = frameCounter / numberOfBoxes;
 
-    int xPosition = xb + ROUNDED_DIV(counter * (s->w - 1), s->framecount);
+    int xPosition = xb + ROUNDED_DIV(counter * (s->w - 1), s->framecount - 1);
 
     xPosition = MAX(xPosition, xb);
 
