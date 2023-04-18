@@ -1,27 +1,8 @@
 # ffmpeg.js
 
-[![NPM](https://nodei.co/npm/ffmpeg.js.png?downloads=true)](https://www.npmjs.com/package/ffmpeg.js)
-
 This library provides FFmpeg builds ported to JavaScript using [Emscripten project](https://github.com/emscripten-core/emscripten). Builds are optimized for in-browser use: minimal size for faster loading, asm.js, performance tunings, etc. Though they work in Node as well.
 
-## Builds
-
-Currently available builds (additional builds may be added in future):
-* `ffmpeg-webm.js` - WebM encoding (VP8 & Opus encoders, popular decoders).
-* `ffmpeg-worker-webm.js` - Web Worker version of `ffmpeg-webm.js`.
-* `ffmpeg-mp4.js` - MP4 encoding (H.264 & AAC & MP3 encoders, popular decoders).
-* `ffmpeg-worker-mp4.js` - Web Worker version of `ffmpeg-mp4.js`.
-
-Note: only NPM releases contain abovementioned files.
-
-## Version scheme
-
-ffmpeg.js uses the following version pattern: `major.minor.9ddd`, where:
-* **major** - FFmpeg's major version number used in the builds.
-* **minor** - FFmpeg's minor version.
-* **ddd** - ffmpeg.js own patch version. Should not be confused with FFmpeg's patch version number.
-
-Example: `2.7.9005`
+This is a fork of the original FFmpeg.js project which adds a custom video filter used by the [AudioMoth Filter Playground](playground.openacousticdevices.info).
 
 ## Usage
 
