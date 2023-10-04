@@ -25,6 +25,10 @@
  * that needs to write in the input frame.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
@@ -78,6 +82,7 @@ typedef struct AudioMothAnimationContext {
     const AVClass *class;
     int x, y, w, h;
     int framecount;
+    char *skip_str;
     char *color_str;
     unsigned char yuv_color[4];
     int invert_color; ///< invert luma color
@@ -94,6 +99,38 @@ static const int NUM_EXPR_EVALS = 5;
 static int numberOfBoxes = 0;
 
 static int frameCounter = 0;
+
+static float *skippingPercentages;
+static int skipCount;
+
+static float* splitAndConvert(const char *inputString, int *skipCount) {
+    // Find the number of elements by counting the lines
+    *skipCount = 1; // Initialize to 1 to account for the first element
+    for (int i = 0; inputString[i]; i++) {
+        if (inputString[i] == '|') {
+            (*skipCount)++;
+        }
+    }
+
+    // Allocate memory for the float array
+    float *floatArray = (float *)malloc(*skipCount * sizeof(float));
+    if (floatArray == NULL) {
+        printf("Memory allocation failed.\n");
+        return NULL;
+    }
+
+    // Split the input string into substrings and convert to floats
+    char *token = strtok((char *)inputString, "|");
+    int index = 0;
+    while (token != NULL) {
+        float floatValue = atof(token); // Convert the substring to a float
+        floatArray[index] = floatValue;
+        index++;
+        token = strtok(NULL, "|");
+    }
+
+    return floatArray;
+}
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -113,6 +150,16 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     numberOfBoxes += 1;
+
+    // If not in skip mode, the skip string will just be '-'
+
+    int compare = strcmp(s->skip_str, "-");
+
+    if (skipCount == 0 && compare != 0) {
+
+        skippingPercentages = splitAndConvert(s->skip_str, &skipCount);
+
+    }
 
     return 0;
 }
@@ -228,7 +275,24 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     int counter = frameCounter / numberOfBoxes;
 
-    int xPosition = xb + ROUNDED_DIV(counter * (s->w - 1), s->framecount - 1);
+    int xPosition = 0;
+
+    if (skipCount == 0) {
+
+        xPosition = xb + ROUNDED_DIV(counter * (s->w - 1), s->framecount - 1);
+
+    } else {
+
+        // Calculate how far through the file the current frame is as a percentage
+
+        int currentPercentage = ROUNDED_DIV((skipCount - 1) * counter, s->framecount - 1);
+
+        // Use that percentage to work out what percentage through the unskipped audio the frame is
+
+        // xPosition = xb + ROUNDED_DIV((s->w - 1) * skippingPercentages[currentPercentage], 100);
+        xPosition = xb + skippingPercentages[currentPercentage];
+
+    }
 
     xPosition = MAX(xPosition, xb);
 
@@ -296,17 +360,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #if CONFIG_AUDIOMOTHANIMATION_FILTER
 
 static const AVOption audiomothanimation_options[] = {
-    { "x",         "set horizontal position of the left box edge", OFFSET(x_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
-    { "y",         "set vertical position of the top box edge",    OFFSET(y_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
-    { "width",     "set width of the box",                         OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
-    { "w",         "set width of the box",                         OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
-    { "height",    "set height of the box",                        OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
-    { "h",         "set height of the box",                        OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
-    { "color",     "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "c",         "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "framecount", "set the framecount",                          OFFSET(t_expr),    AV_OPT_TYPE_STRING, { .str="3" },       CHAR_MIN, CHAR_MAX, FLAGS },
-    { "f",         "set the framecount",                           OFFSET(t_expr),    AV_OPT_TYPE_STRING, { .str="3" },       CHAR_MIN, CHAR_MAX, FLAGS },
-    { "replace",   "replace color & alpha",                        OFFSET(replace),   AV_OPT_TYPE_BOOL,   { .i64=0 },         0,        1,        FLAGS },
+    { "x",          "set horizontal position of the left box edge", OFFSET(x_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "y",          "set vertical position of the top box edge",    OFFSET(y_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "width",      "set width of the box",                         OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "w",          "set width of the box",                         OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "height",     "set height of the box",                        OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "h",          "set height of the box",                        OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "color",      "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "c",          "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "skip",       "set percentage skip coordinates",              OFFSET(skip_str), AV_OPT_TYPE_STRING,  { .str = "-" },     CHAR_MIN, CHAR_MAX, FLAGS },
+    { "framecount", "set the framecount",                           OFFSET(t_expr),    AV_OPT_TYPE_STRING, { .str="3" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "f",          "set the framecount",                           OFFSET(t_expr),    AV_OPT_TYPE_STRING, { .str="3" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "replace",    "replace color & alpha",                        OFFSET(replace),   AV_OPT_TYPE_BOOL,   { .i64=0 },         0,        1,        FLAGS },
     { NULL }
 };
 

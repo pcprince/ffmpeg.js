@@ -1,0 +1,11 @@
+{
+    "dotnet.defaultSolution": "disable",
+    "files.associations": {
+        "eval.h": "c",
+        "parseutils.h": "c",
+        "avfilter.h": "c",
+        "stdio.h": "c",
+        "string.h": "c",
+        "xlocale": "c"
+    }
+}
